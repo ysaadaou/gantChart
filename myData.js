@@ -41,7 +41,7 @@ const gantData = {
         {
           name: "PO signature",
           startingDate: "2024-07-19",
-          endingDate: "2025-04-15",
+          endingDate: "2024-07-31",
           status: "",
         },
         {
