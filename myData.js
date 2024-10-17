@@ -438,7 +438,7 @@ const gantData = {
         {
           name: "PO CONTRACTUAL DELIVERY DATE JFC1",
           startingDate: "",
-          endingDate: "2025-06-07",
+          endingDate: "",
           status: "Annexes not yet signed",
         },
         {
