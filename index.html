@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My Dashboard</title>
+
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!---->
+
+    <div class="header">
+      <div class="supplier"></div>
+      <div class="productName"></div>
+    </div>
+    <div class="chartCard">
+      <div class="chartBox">
+        <canvas id="myChart"></canvas>
+      </div>
+    </div>
+
+    <div id="tableContainer"></div>
+    <script src="./csv.js"></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"
+    ></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script type="module">
+      import gantdata from "./myData.js";
+      import otherData from "./otherData.js";
+
+      let keys = Object.keys(gantdata);
+
+      let dataArray = keys.map((k) => {
+        return {
+          id: k,
+          supplier: otherData[k].otherData[0].supplier,
+          productName: otherData[k].otherData[0].productName,
+        };
+      });
+
+      let res = handleData(dataArray[13]);
+
+      let data = {
+        datasets: [
+          {
+            data: res[0],
+            backgroundColor: [
+              "rgba(255, 26, 104, 0.2)",
+              "rgba(54, 162, 235, 0.2)",
+              "rgba(255, 206, 86, 0.2)",
+              "rgba(75, 192, 192, 0.2)",
+              "rgba(153, 102, 255, 0.2)",
+              "rgba(0, 0, 0, 0.2)",
+            ],
+            borderColor: [
+              "rgba(255, 26, 104, 1)",
+              "rgba(54, 162, 235, 1)",
+              "rgba(255, 206, 86, 1)",
+              "rgba(75, 192, 192, 1)",
+              "rgba(153, 102, 255, 1)",
+              "rgba(0, 0, 0, 1)",
+            ],
+            borderWidth: 1,
+            borderSkipped: false,
+
+            borderRadius: 10,
+            barPercentage: 0.4,
+          },
+        ],
+      };
+
+      const todayLine = {
+        id: "todayLine",
+        afterDatasetsDraw(chart, args, pluginOptions) {
+          const {
+            ctx,
+            data,
+            chartArea: { top, bottom, left, right },
+            scales: { x, y },
+          } = chart;
+
+          ctx.save();
+
+          ctx.beginPath();
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = "rgba(255, 26, 104, 1)";
+          ctx.setLineDash([6, 6]);
+          ctx.moveTo(x.getPixelForValue(new Date()), top);
+          ctx.lineTo(x.getPixelForValue(new Date()), bottom);
+
+          ctx.stroke();
+          ctx.restore();
+        },
+      };
+      // config
+      const config = {
+        type: "bar",
+        data,
+        options: {
+          indexAxis: "y",
+
+          scales: {
+            x: {
+              position: "top",
+              type: "time",
+              time: {
+                unit: "day",
+              },
+
+              min: res[1].min,
+              max: res[1].max,
+            },
+          },
+
+          plugins: {
+            legend: {
+              display: false,
+            },
+            tooltip: {
+              callbacks: {
+                title: (ctx) => {
+                  ctx[0].formattedValue = "";
+                  const startDate = new Date(ctx[0].raw.x[0]);
+                  const endDate = new Date(ctx[0].raw.x[1]);
+
+                  console.log(ctx);
+                  const formattedStartDate = startDate.toLocaleString([], {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                    hour12: true,
+                  });
+
+                  const formattedEndDate = endDate.toLocaleString([], {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                    hour12: true,
+                  });
+                  return `${formattedStartDate} - ${formattedEndDate}`;
+                },
+              },
+            },
+          },
+        },
+        plugins: [todayLine],
+      };
+
+      // render init block
+      const myChart = new Chart(document.getElementById("myChart"), config);
+
+      function createTable(data) {
+        // Clear the existing table if it exists
+        const existingTable = document.querySelector("table");
+        if (existingTable) existingTable.remove();
+
+        // Create a table element
+        const table = document.createElement("table");
+        table.border = 1;
+
+        // Create the header row using the keys of the first object
+        const header = document.createElement("tr");
+        Object.keys(data[0]).forEach((key) => {
+          const th = document.createElement("th");
+          th.textContent = key; // Use the object keys as header names
+          header.appendChild(th);
+        });
+        table.appendChild(header);
+
+        // Populate the table rows with the object data
+        data.forEach((obj) => {
+          const row = document.createElement("tr");
+          Object.values(obj).forEach((value) => {
+            const td = document.createElement("td");
+            td.textContent = value; // Use the object values as cell data
+            row.appendChild(td);
+          });
+          table.appendChild(row);
+
+          // Add click event to the entire row
+          row.addEventListener("click", () => handleRowClick(row, obj));
+        });
+
+        // Append the table to the DOM
+        document.getElementById("tableContainer").appendChild(table);
+      }
+
+      // Function to handle row click, highlight, and log data
+      function handleRowClick(row, rowData) {
+        // Remove highlight from any previously selected row
+        const previouslySelected = document.querySelectorAll("tr.selected");
+        previouslySelected.forEach((tr) => tr.classList.remove("selected"));
+
+        // Add highlight class to the clicked row
+        row.classList.add("selected");
+
+        // Log the row data
+        console.log("Selected row data:", rowData);
+
+        update(rowData);
+      }
+
+      function handleData(data) {
+        let supplier = document.querySelector(".supplier");
+        let productName = document.querySelector(".productName");
+        supplier.innerText = data.supplier;
+        productName.innerText = data.productName;
+        let milestones = gantdata[data.id].gantData.milestones.map((m) => {
+          return {
+            x: [
+              m.startingDate.replace(/\//g, "-"),
+              m.endingDate.replace(/\//g, "-"),
+            ],
+            y: m.name,
+          };
+        });
+        let { min, max } = findMinMaxDate(milestones);
+
+        return [milestones, { min, max }];
+      }
+
+      function update(data) {
+        let res = handleData(data);
+
+        myChart.config.data.datasets[0].data = res[0];
+        myChart.config.options.scales.x.min = res[1].min;
+        myChart.config.options.scales.x.max = res[1].max;
+        myChart.update();
+      }
+
+      function findMinMaxDate(data) {
+        let minDate = null;
+        let maxDate = null;
+
+        data.forEach((obj) => {
+          obj.x.forEach((dateStr) => {
+            // Check if dateStr is not empty
+            if (dateStr) {
+              if (!minDate || dateStr < minDate) {
+                minDate = dateStr; // Update minDate if it's null or current date is smaller
+              }
+
+              if (!maxDate || dateStr > maxDate) {
+                maxDate = dateStr; // Update maxDate if it's null or current date is larger
+              }
+            }
+          });
+        });
+
+        return {
+          min: minDate,
+          max: maxDate,
+        };
+      }
+      createTable(dataArray);
+    </script>
+  </body>
+</html>
