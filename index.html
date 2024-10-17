@@ -127,7 +127,6 @@
                   const startDate = new Date(ctx[0].raw.x[0]);
                   const endDate = new Date(ctx[0].raw.x[1]);
 
-                  console.log(ctx);
                   const formattedStartDate = startDate.toLocaleString([], {
                     year: "numeric",
                     month: "short",
@@ -199,7 +198,6 @@
         row.classList.add("selected");
 
         // Log the row data
-        console.log("Selected row data:", rowData);
 
         update(rowData);
       }
